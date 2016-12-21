@@ -156,7 +156,7 @@ class BaseClass(object):
         """
         url = 'http://pcs.baidu.com/rest/2.0/pcs/file?app_id=250528&method=locateupload'
         ret = requests.get(url).content
-        foo = json.loads(ret)
+        foo = json.loads(ret.decode())
         return foo['host']
 
     def set_pcs_server(self, server):
@@ -192,20 +192,26 @@ class BaseClass(object):
             self.user['token'] = self._get_token()
 
     def _save_cookies(self):
+        #liuxin 将baidukey写入cookies
+        
         cookies_file = '.{0}.cookies'.format(self.username)
         with open(cookies_file, 'w') as f:
+            print(self.session.cookies)
             pickle.dump(
                 requests.utils.dict_from_cookiejar(self.session.cookies), f)
 
     def _load_cookies(self):
+        #读取cookies中的baidukey
         cookies_file = '.{0}.cookies'.format(self.username)
         logging.debug('cookies file:' + cookies_file)
         if os.path.exists(cookies_file):
             logging.debug('%s cookies file has already existed.' %
                           self.username)
+            print(cookies_file)
             with open(cookies_file) as cookies_file:
+                print(type(cookies_file))
                 cookies = requests.utils.cookiejar_from_dict(
-                    pickle.load(cookies_file))
+                    pickle.loads(cookies_file.read().encode("utf-8")))
                 logging.debug(str(cookies))
                 self.session.cookies = cookies
                 self.user['BDUSS'] = self.session.cookies['BDUSS']
@@ -232,7 +238,7 @@ class BaseClass(object):
 
     def show_captcha(self, url_verify_code):
         print(url_verify_code)
-        verify_code = raw_input('open url aboved with your web browser, then input verify code > ')
+        verify_code = input('open url aboved with your web browser, then input verify code > ')
 
         return verify_code
 
@@ -240,7 +246,7 @@ class BaseClass(object):
         url = 'https://passport.baidu.com/v2/getpublickey?token=' + \
             self.user['token']
         content = self.session.get(url).content
-        jdata = json.loads(content.replace('\'','"'))
+        jdata = json.loads(content.decode().replace('\'','"'))
         return (jdata['pubkey'], jdata['key'])
 
     def _login(self):
@@ -250,7 +256,7 @@ class BaseClass(object):
         code_string = ''
         pubkey, rsakey = self._get_publickey()
         key = rsa.PublicKey.load_pkcs1_openssl_pem(pubkey)
-        password_rsaed = base64.b64encode(rsa.encrypt(self.password, key))
+        password_rsaed = base64.b64encode(rsa.encrypt(self.password.encode('utf-8'), key))
         while True:
             login_data = {'staticpage': 'http://www.baidu.com/cache/user/html/v3Jump.html',
                           'charset': 'UTF-8',
@@ -279,8 +285,8 @@ class BaseClass(object):
                 'https://passport.baidu.com/v2/api/?login', data=login_data)
 
             # 是否需要验证码
-            if 'err_no=257' in result.content or 'err_no=6' in result.content:
-                code_string = re.findall('codeString=(.*?)&', result.content)[0]
+            if 'err_no=257' in result.content.decode() or 'err_no=6' in result.content.decode():
+                code_string = re.findall('codeString=(.*?)&', result.content.decode())[0]
                 logging.debug('need captcha, codeString=' + code_string)
                 captcha = self._get_captcha(code_string)
                 continue
@@ -304,7 +310,7 @@ class BaseClass(object):
         self._save_cookies()
 
     def _check_account_exception(self, content):
-        err_id = re.findall('err_no=([\d]+)', content)[0]
+        err_id = re.findall('err_no=([\d]+)', content.decode())[0]
 
         if err_id == '0':
             return
@@ -332,7 +338,7 @@ class BaseClass(object):
 
     def _params_utf8(self, params):
         for k, v in params.items():
-            if isinstance(v, unicode):
+            if isinstance(v, str):
                 params[k] = v.encode('utf-8')
 
     @check_login
@@ -680,7 +686,7 @@ class PCS(BaseClass):
         if not hasattr(self, 'dsign'):
             self.get_sign()
 
-        if isinstance(remote_path, str) or isinstance(remote_path, unicode):
+        if isinstance(remote_path, bytes) or isinstance(remote_path, str):
             remote_path = [remote_path]
 
         file_list = []
