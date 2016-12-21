@@ -1065,7 +1065,7 @@ class PCS(BaseClass):
         }
 
         url = 'http://{0}/api/filemanager'.format(BAIDUPAN_SERVER)
-        print '请求url', url
+        print('请求url', url)
         logging.debug('rename ' + str(data) + 'URL:' + url)
         return self._request('filemanager', 'rename', url=url, data=data, extra_params=params, **kwargs)
 
