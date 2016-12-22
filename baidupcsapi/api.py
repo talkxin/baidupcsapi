@@ -99,8 +99,8 @@ def check_login(func):
         ret = func(*args, **kwargs)
         if type(ret) == requests.Response:
             try:
-                foo = json.loads(ret.content)
-                if foo.has_key('errno') and foo['errno'] == -6:
+                foo = json.loads(ret.content.decode())
+                if ('errno' in foo) and foo['errno'] == -6:
                     logging.debug(
                         'Offline, deleting cookies file then relogin.')
                     path = '.{0}.cookies'.format(args[0].username)
@@ -193,14 +193,13 @@ class BaseClass(object):
 
     def _save_cookies(self):
         #liuxin 将baidukey写入cookies
-        
         cookies_file = '.{0}.cookies'.format(self.username)
-        with open(cookies_file, 'wb') as f:
+        with open(cookies_file, 'wb') as cookies_file:
             pickle.dump(
-                requests.utils.dict_from_cookiejar(self.session.cookies), f)
+                requests.utils.dict_from_cookiejar(self.session.cookies), cookies_file)
 
     def _load_cookies(self):
-        #读取cookies中的baidukey
+        #liuxin 读取cookies中的baidukey
         cookies_file = '.{0}.cookies'.format(self.username)
         logging.debug('cookies file:' + cookies_file)
         if os.path.exists(cookies_file):
