@@ -195,8 +195,7 @@ class BaseClass(object):
         #liuxin 将baidukey写入cookies
         
         cookies_file = '.{0}.cookies'.format(self.username)
-        with open(cookies_file, 'w') as f:
-            print(self.session.cookies)
+        with open(cookies_file, 'wb') as f:
             pickle.dump(
                 requests.utils.dict_from_cookiejar(self.session.cookies), f)
 
@@ -207,11 +206,9 @@ class BaseClass(object):
         if os.path.exists(cookies_file):
             logging.debug('%s cookies file has already existed.' %
                           self.username)
-            print(cookies_file)
-            with open(cookies_file) as cookies_file:
-                print(type(cookies_file))
+            with open(cookies_file,'rb') as cookies_file:
                 cookies = requests.utils.cookiejar_from_dict(
-                    pickle.loads(cookies_file.read().encode("utf-8")))
+                    pickle.load(cookies_file))
                 logging.debug(str(cookies))
                 self.session.cookies = cookies
                 self.user['BDUSS'] = self.session.cookies['BDUSS']
