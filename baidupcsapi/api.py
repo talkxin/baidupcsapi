@@ -208,7 +208,6 @@ class BaseClass(object):
             with open(cookies_file,'rb') as cookies_file:
                 cookies = requests.utils.cookiejar_from_dict(
                     pickle.load(cookies_file))
-                logging.debug(str(cookies))
                 self.session.cookies = cookies
                 self.user['BDUSS'] = self.session.cookies['BDUSS']
                 return True
@@ -220,7 +219,7 @@ class BaseClass(object):
         ret = self.session.get(
             'https://passport.baidu.com/v2/api/?getapi&tpl=mn&apiver=v3&class=login&tt=%s&logintype=dialogLogin&callback=0' % int(time.time())).text.replace('\'', '\"')
         foo = json.loads(ret)
-        logging.info('token %s' % foo['data']['token'])
+        logging.debug('token %s' % foo['data']['token'])
         return foo['data']['token']
 
     def _get_captcha(self, code_string):
@@ -248,11 +247,13 @@ class BaseClass(object):
     def _login(self):
         # Login
         #code_string, captcha = self._get_captcha()
+        
         captcha = ''
         code_string = ''
         pubkey, rsakey = self._get_publickey()
         key = rsa.PublicKey.load_pkcs1_openssl_pem(pubkey)
         password_rsaed = base64.b64encode(rsa.encrypt(self.password.encode('utf-8'), key))
+        isCheck=False
         while True:
             login_data = {'staticpage': 'http://www.baidu.com/cache/user/html/v3Jump.html',
                           'charset': 'UTF-8',
@@ -280,17 +281,21 @@ class BaseClass(object):
             result = self.session.post(
                 'https://passport.baidu.com/v2/api/?login', data=login_data)
 
+            if self.user['token'].find('the fisrt two args should be string')!=-1:
+                self._initiate()
+                break
             # 是否需要验证码
             if 'err_no=257' in result.content.decode() or 'err_no=6' in result.content.decode():
                 code_string = re.findall('codeString=(.*?)&', result.content.decode())[0]
                 logging.debug('need captcha, codeString=' + code_string)
                 captcha = self._get_captcha(code_string)
                 continue
-
+            isCheck=True
             break
 
         # check exception
-        self._check_account_exception(result.content)
+        if isCheck:
+            self._check_account_exception(result.content)
 
         if not result.ok:
             raise LoginFailed('Logging failed.')
@@ -390,6 +395,7 @@ class BaseClass(object):
             else:
                 response = self.session.get(
                     api, params=params, verify=False, headers=headers, **kwargs)
+#                print(response.url)
         return response
 
 
