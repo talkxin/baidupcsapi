@@ -217,9 +217,10 @@ class BaseClass(object):
     def _get_token(self):
         # Token
         ret = self.session.get(
-            'https://passport.baidu.com/v2/api/?getapi&tpl=mn&apiver=v3&class=login&tt=%s&logintype=dialogLogin&callback=0' % int(time.time())).text.replace('\'', '\"')
-        foo = json.loads(ret)
-        logging.debug('token %s' % foo['data']['token'])
+                               'https://passport.baidu.com/v2/api/?getapi&tpl=netdisk'
+                               '&apiver=v3&tt={}&class=login&logintype=basicLogin'.format(int(time.time())))
+        foo = json.loads(ret.content.decode().replace('\'', '"'))
+        logging.info('token %s' % foo['data']['token'])
         return foo['data']['token']
 
     def _get_captcha(self, code_string):
@@ -255,35 +256,65 @@ class BaseClass(object):
         password_rsaed = base64.b64encode(rsa.encrypt(self.password.encode('utf-8'), key))
         isCheck=False
         while True:
-            login_data = {'staticpage': 'http://www.baidu.com/cache/user/html/v3Jump.html',
-                          'charset': 'UTF-8',
-                          'token': self.user['token'],
-                          'tpl': 'pp',
-                          'subpro': '',
-                          'apiver': 'v3',
-                          'tt': str(int(time.time())),
-                          'codestring': code_string,
-                          'isPhone': 'false',
-                          'safeflg': '0',
-                          'u': 'https://passport.baidu.com/',
-                          'quick_user': '0',
-                          'logLoginType': 'pc_loginBasic',
-                          'loginmerge': 'true',
-                          'logintype': 'basicLogin',
-                          'username': self.username,
-                          'password': password_rsaed,
-                          'verifycode': captcha,
-                          'mem_pass': 'on',
-                          'rsakey': str(rsakey),
-                          'crypttype': 12,
-                          'ppui_logintime': '50918',
-                          'callback': 'parent.bd__pcbs__oa36qm'}
+            
+            login_data = {
+#                          'staticpage': 'http://www.baidu.com/cache/user/html/v3Jump.html',
+#                          'charset': 'UTF-8',
+#                          'token': self.user['token'],
+#                          'tpl': 'pp',
+#                          'subpro': '',
+#                          'apiver': 'v3',
+#                          'tt': str(int(time.time())),
+#                          'codestring': code_string,
+#                          'isPhone': 'false',
+#                          'safeflg': '0',
+#                          'u': 'https://passport.baidu.com/',
+#                          'quick_user': '0',
+#                          'logLoginType': 'pc_loginBasic',
+#                          'loginmerge': 'true',
+#                          'logintype': 'basicLogin',
+#                          'username': self.username,
+#                          'password': password_rsaed,
+#                          'verifycode': captcha,
+#                          'mem_pass': 'on',
+#                          'rsakey': str(rsakey),
+#                          'crypttype': 12,
+#                          'ppui_logintime': '50918',
+#                          'callback': 'parent.bd__pcbs__oa36qm'
+                "staticpage": "http://pan.baidu.com/res/static/thirdparty/pass_v3_jump.html",
+                "charset": "utf-8",
+                "token": self.user['token'],
+                "tpl": "netdisk",
+                "subpro": "",
+                "apiver": "v3",
+                "tt": int(time.time()),
+                "codestring": code_string,
+                "safeflg": "0",
+                "u": "http://pan.baidu.com/",
+                "isPhone": "",
+                "quick_user": "0",
+                "logintype": "basicLogin",
+                "logLoginType": "pc_loginBasic",
+                "idc": "",
+                "loginmerge": "true",
+                "username": self.username,
+                "password": self.password,
+                "verifycode": captcha,
+                "mem_pass": "on",
+                "rsakey": str(rsakey),
+                "crypttype": "",
+                "ppui_logintime": "2602",
+                "callback": "parent.bd__pcbs__ahhlgk",
+                          }
+#            if captcha=='':
+#                del login_data['verifycode']
             result = self.session.post(
                 'https://passport.baidu.com/v2/api/?login', data=login_data)
 
             if self.user['token'].find('the fisrt two args should be string')!=-1:
                 self._initiate()
                 break
+            
             # 是否需要验证码
             if 'err_no=257' in result.content.decode() or 'err_no=6' in result.content.decode():
                 code_string = re.findall('codeString=(.*?)&', result.content.decode())[0]
@@ -395,7 +426,6 @@ class BaseClass(object):
             else:
                 response = self.session.get(
                     api, params=params, verify=False, headers=headers, **kwargs)
-#                print(response.url)
         return response
 
 
